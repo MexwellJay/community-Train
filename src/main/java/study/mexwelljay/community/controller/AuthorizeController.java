@@ -7,9 +7,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import study.mexwelljay.community.dto.AccessTokenDTO;
 import study.mexwelljay.community.dto.GithubUser;
+import study.mexwelljay.community.mapper.UserMapper;
+import study.mexwelljay.community.pojo.User;
 import study.mexwelljay.community.provider.GithubProvider;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.UUID;
 
 /**
  * @auther Jay
@@ -20,6 +23,8 @@ import javax.servlet.http.HttpServletRequest;
 public class AuthorizeController {
     @Autowired
     private GithubProvider githubProvider;
+    @Autowired
+    private UserMapper userMapper;
 
     @Value("${github.client.id}")
     private String clientId;
@@ -39,9 +44,16 @@ public class AuthorizeController {
         accessTokenDTO.setRedirect_uri(redirectUri);
         accessTokenDTO.setState(state);
         String accessToken = githubProvider.getAccessToken(accessTokenDTO);
-        GithubUser user = githubProvider.getUser(accessToken);//通过accessToken得到了用户所有信息
+        GithubUser githubUser = githubProvider.getUser(accessToken);//通过accessToken得到了用户所有信息
 //        System.out.println(user.getName());
-        if (user != null) {
+        if (githubUser != null) {
+            User user = new User();
+            user.setToken(UUID.randomUUID().toString());
+            user.setName(githubUser.getName());
+            user.setAccountId(String.valueOf(githubUser.getId()));
+            user.setGmtCreate(System.currentTimeMillis());
+            user.setGmtModified(user.getGmtCreate());
+            userMapper.insert(user);
             //登陆成功，写cookie和session
             request.getSession().setAttribute("user", user);
             return "redirect:/";
