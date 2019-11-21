@@ -9,6 +9,8 @@ import study.mexwelljay.community.dto.AccessTokenDTO;
 import study.mexwelljay.community.dto.GithubUser;
 import study.mexwelljay.community.provider.GithubProvider;
 
+import javax.servlet.http.HttpServletRequest;
+
 /**
  * @auther Jay
  * @date 2019/11/6
@@ -28,7 +30,8 @@ public class AuthorizeController {
 
     @GetMapping("/callback")
     public String callback(@RequestParam(name = "code") String code,
-                           @RequestParam(name = "state") String state){
+                           @RequestParam(name = "state") String state,
+                           HttpServletRequest request) {
         AccessTokenDTO accessTokenDTO = new AccessTokenDTO();
         accessTokenDTO.setClient_id(clientId);
         accessTokenDTO.setClient_secret(clientSecret);
@@ -36,10 +39,15 @@ public class AuthorizeController {
         accessTokenDTO.setRedirect_uri(redirectUri);
         accessTokenDTO.setState(state);
         String accessToken = githubProvider.getAccessToken(accessTokenDTO);
-        GithubUser user = githubProvider.getUser(accessToken);
-        System.out.println(user.getName());
-        System.out.println(user.getId());
-        System.out.println(user.getBio());
-        return "index";
+        GithubUser user = githubProvider.getUser(accessToken);//通过accessToken得到了用户所有信息
+//        System.out.println(user.getName());
+        if (user != null) {
+            //登陆成功，写cookie和session
+            request.getSession().setAttribute("user", user);
+            return "redirect:/";
+        } else {
+            //登录失败，重新登陆
+            return "redirect:/";
+        }
     }
 }
